@@ -54,7 +54,7 @@ def main(num_epochs = 100,
     if TESTING:
         model1 = V1(alphabet_size).to(device)
     else:
-        model1 = model_type().to(device)
+        model1 = model_type(alphabet_size).to(device)
     print(model1.__class__)
 
     # Loss and optimizer
