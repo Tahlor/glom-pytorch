@@ -6,7 +6,24 @@ from torch import nn, einsum
 from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 
+## Try on MNIST first
+## Once this is predicting letter embeddings, then we can add on LM on top
+## Can you have a transformer over the patches that outputs 1 word vector?
+    # Easiest way would be to just use your letter transformer, which could be pretrained; NAH, because many patches -> few letters
+        # Can we use a "window" for the attention?
+        # Or reformer/longformer
+    # You need an encoder/decoder, take in all tokens, output all words/letters
+        # Need to feed this back down the hierarchy
+        # Need to assign to each patch a word/letter
+            # May need a NN
+            # Just a linear layer with big batch size
+
+## Alternative
+    # What if you used traditional CNN and you predict a letter for each patch?
+
 # constants
+
+### CONVERT EMBEDDING TO COSINE
 
 TOKEN_ATTEND_SELF_VALUE = -5e-4
 
@@ -83,7 +100,8 @@ class Glom(nn.Module):
         image_size = 224,
         patch_size = 14,
         consensus_self = False,
-        local_consensus_radius = 0
+        local_consensus_radius = 0,
+        channels=1
     ):
         super().__init__()
         # bottom level - incoming image, tokenize and add position
@@ -93,7 +111,7 @@ class Glom(nn.Module):
 
         self.image_to_tokens = nn.Sequential(
             Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_size, p2 = patch_size),
-            nn.Linear(patch_size ** 2 * 3, dim)
+            nn.Linear(patch_size ** 2 * channels, dim)
         )
         self.pos_emb = nn.Embedding(num_patches, dim)
 
@@ -108,6 +126,17 @@ class Glom(nn.Module):
         self.attention = ConsensusAttention(num_patches_side, attend_self = consensus_self, local_consensus_radius = local_consensus_radius)
 
     def forward(self, img, iters = None, levels = None, return_all = False):
+        """
+        
+        Args:
+            img:
+            iters:
+            levels:
+            return_all:
+
+        Returns:
+
+        """
         b, device = img.shape[0], img.device
         iters = default(iters, self.levels * 2)   # need to have twice the number of levels of iterations in order for information to propagate up and back down. can be overridden
 
