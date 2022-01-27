@@ -4,7 +4,7 @@
 #SBATCH --mem-per-cpu 5285MB
 #SBATCH --ntasks 7
 #SBATCH --nodes=1
-#SBATCH --output="/lustre/scratch/grp/fslg_internn/glom-pytorch/slurm/balanced/VGG.slurm"
+#SBATCH --output="VGG.slurm"
 #SBATCH --time 4:00:00
 #SBATCH --mail-user=taylornarchibald@gmail.com   # email address
 #SBATCH --mail-type=BEGIN

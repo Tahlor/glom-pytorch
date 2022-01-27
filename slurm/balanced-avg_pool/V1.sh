@@ -23,4 +23,4 @@ conda activate /lustre/scratch/grp/fslg_internn/env/internn
 
 cd "/lustre/scratch/grp/fslg_internn/glom-pytorch"
 which python
-python -u /lustre/scratch/grp/fslg_internn/glom-pytorch/MNIST_vgg.py --model V1 --data balanced
+python -u /lustre/scratch/grp/fslg_internn/glom-pytorch/MNIST_vgg.py --model V1 --data balanced --pool average
