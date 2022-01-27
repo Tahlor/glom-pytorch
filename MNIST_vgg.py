@@ -6,8 +6,7 @@ import torchvision
 import math
 import torch.nn.functional as F
 import numpy as np
-from models import VGG, V1, VGGLinear, LinearReg
-
+from models import VGG, V1, VGGLinear, LinearReg, LinearRegDropOut
 import argparse
 from data import loaders
 from torch import nn
@@ -63,7 +62,7 @@ def main(num_epochs = 100,
 
     if args.pool.lower()=="average":
         from models_avg_pool import VGG, V1, VGGLinear
-    MODELS = {"LinearReg":LinearReg, "VGG":VGG, "VGGLinear":VGGLinear, "V1":V1}
+    MODELS = {"LinearReg":LinearReg, "VGG":VGG, "VGGLinear":VGGLinear, "V1":V1, "LinearRegDropOut":LinearRegDropOut}
     model_type = MODELS[args.model]
     if TESTING:
         model1 = LinearReg(alphabet_size).to(device)
