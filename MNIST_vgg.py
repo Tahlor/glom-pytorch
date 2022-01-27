@@ -41,7 +41,7 @@ def main(num_epochs = 100,
 
     args = parse_args()
     train_loader, test_loader = loaders.loader(batch_size_train = 100, batch_size_test = 1000, split=args.data.lower())
-    if args.data.lower()=="balanced":
+    if args.data.lower() == "balanced":
         alphabet_size = 47
     elif args.data.lower() == "letters":
         alphabet_size = 26
