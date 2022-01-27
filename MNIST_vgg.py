@@ -41,7 +41,10 @@ def main(num_epochs = 100,
 
     args = parse_args()
     train_loader, test_loader = loaders.loader(batch_size_train = 100, batch_size_test = 1000, split=args.data.lower())
-
+    if args.data.lower()=="balanced":
+        alphabet_size = 47
+    elif args.data.lower() == "letters":
+        alphabet_size = 26
     # Train the model
     total_step = len(train_loader)
     curr_lr1 = learning_rate
@@ -49,7 +52,7 @@ def main(num_epochs = 100,
     MODELS = {"VGG":VGG, "VGGLinear":VGGLinear, "V1":V1}
     model_type = MODELS[args.model]
     if TESTING:
-        model1 = V1().to(device)
+        model1 = V1(alphabet_size).to(device)
     else:
         model1 = model_type().to(device)
     print(model1.__class__)
