@@ -11,8 +11,9 @@ import argparse
 from data import loaders
 from torch import nn
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
+import utils
 
-TESTING = False
+TESTING = True if utils.is_galois() else False
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -41,10 +42,12 @@ def main(num_epochs = 100,
 
     args = parse_args()
     train_loader, test_loader = loaders.loader(batch_size_train = 100, batch_size_test = 1000, split=args.data.lower())
+    sample = next(iter(train_loader))
+    print("max label", torch.max(sample[1]).item())
     if args.data.lower() == "balanced":
         alphabet_size = 47
     elif args.data.lower() == "letters":
-        alphabet_size = 26
+        alphabet_size = 27
     # Train the model
     total_step = len(train_loader)
     curr_lr1 = learning_rate
@@ -52,7 +55,7 @@ def main(num_epochs = 100,
     MODELS = {"VGG":VGG, "VGGLinear":VGGLinear, "V1":V1}
     model_type = MODELS[args.model]
     if TESTING:
-        model1 = V1(alphabet_size).to(device)
+        model1 = VGG(alphabet_size).to(device)
     else:
         model1 = model_type(alphabet_size).to(device)
     print(model1.__class__)
