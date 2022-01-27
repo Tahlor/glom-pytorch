@@ -3,7 +3,7 @@ import torchvision
 import torch.nn as nn
 import math
 import torch.nn.functional as F
-
+from einops.layers.torch import Rearrange
 
 def normalize(s):
     for m in s.children():
@@ -195,3 +195,32 @@ class V1(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return F.log_softmax(x, dim=1)
+
+
+class LinearReg(nn.Module):
+    two_conv_pool = three_conv_pool = None
+    def __init__(self, num_classes=27):#62):
+        super().__init__()
+        self.classifier = nn.Sequential(
+            nn.Linear(28*28, num_classes),
+        )
+
+    def forward(self, x):
+        b,c,h,w = x.shape
+        x = self.classifier(x.view(b,-1))
+        return F.log_softmax(x, dim=1)
+
+class LinearRegDropOut(nn.Module):
+    two_conv_pool = three_conv_pool = None
+    def __init__(self, num_classes=27):#62):
+        super().__init__()
+        self.classifier = nn.Sequential(
+            nn.Dropout(p=0.5),
+            nn.Linear(28*28, num_classes),
+        )
+
+    def forward(self, x):
+        b, c, h, w = x.shape
+        x = self.classifier(x.view(b, -1))
+        return F.log_softmax(x, dim=1)
+

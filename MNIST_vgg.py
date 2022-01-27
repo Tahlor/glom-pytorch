@@ -6,15 +6,22 @@ import torchvision
 import math
 import torch.nn.functional as F
 import numpy as np
-from models import VGG, V1, VGGLinear
+from models import VGG, V1, VGGLinear, LinearReg
 
 import argparse
 from data import loaders
 from torch import nn
 from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 import utils
+from einops.layers.torch import Rearrange
 
 TESTING = True if utils.is_galois() else False
+
+"""
+## Try no Dropout
+## Try LinearReg
+
+"""
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -56,10 +63,10 @@ def main(num_epochs = 100,
 
     if args.pool.lower()=="average":
         from models_avg_pool import VGG, V1, VGGLinear
-    MODELS = {"VGG":VGG, "VGGLinear":VGGLinear, "V1":V1}
+    MODELS = {"LinearReg":LinearReg, "VGG":VGG, "VGGLinear":VGGLinear, "V1":V1}
     model_type = MODELS[args.model]
     if TESTING:
-        model1 = VGG(alphabet_size).to(device)
+        model1 = LinearReg(alphabet_size).to(device)
     else:
         model1 = model_type(alphabet_size).to(device)
     parameters = sum(p.numel() for p in model1.parameters() if p.requires_grad)
