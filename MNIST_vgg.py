@@ -7,6 +7,7 @@ import math
 import torch.nn.functional as F
 import numpy as np
 from models import VGG, V1, VGGLinear
+
 import argparse
 from data import loaders
 from torch import nn
@@ -21,6 +22,7 @@ def parse_args():
     parser.add_argument('--testing', action="store_true", default=False, help='Run testing version')
     parser.add_argument('--model', type=str, default="VGG", help='VGG, V1, VGGLinear')
     parser.add_argument('--data', type=str, default="Letters", help='Letters, Balanced')
+    parser.add_argument('--pool', type=str, default="max", help='max, average')
 
     #parser.add_argument('--name', type=str, default="", help='Optional - special name for this run')
     opts = parser.parse_args()
@@ -52,14 +54,18 @@ def main(num_epochs = 100,
     total_step = len(train_loader)
     curr_lr1 = learning_rate
 
+    if args.pool.lower()=="average":
+        from models_avg_pool import VGG, V1, VGGLinear
     MODELS = {"VGG":VGG, "VGGLinear":VGGLinear, "V1":V1}
     model_type = MODELS[args.model]
     if TESTING:
         model1 = VGG(alphabet_size).to(device)
     else:
         model1 = model_type(alphabet_size).to(device)
+    parameters = sum(p.numel() for p in model1.parameters() if p.requires_grad)
     print(model1.__class__)
-
+    print("Parameters", parameters)
+    print(model1.two_conv_pool, model1.three_conv_pool,)
     # Loss and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer1 = torch.optim.Adam(model1.parameters(), lr=learning_rate)
