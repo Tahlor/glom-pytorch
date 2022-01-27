@@ -10,11 +10,16 @@ from models import VGG, V1, VGGLinear
 import argparse
 from data import loaders
 from torch import nn
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
+
+TESTING = False
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default="./configs/stroke_config/baseline.yaml", help='Path to the config file.')
     parser.add_argument('--testing', action="store_true", default=False, help='Run testing version')
+    parser.add_argument('--model', type=str, default="VGG", help='VGG, V1, VGGLinear')
+
     #parser.add_argument('--name', type=str, default="", help='Optional - special name for this run')
     opts = parser.parse_args()
     return opts
@@ -26,7 +31,7 @@ def update_lr(optimizer, lr):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
-def main(num_epochs = 200,
+def main(num_epochs = 100,
          learning_rate = 0.005,
          momentum = 0.5,
          log_interval = 500,
@@ -39,12 +44,20 @@ def main(num_epochs = 200,
     total_step = len(train_loader)
     curr_lr1 = learning_rate
 
-    model1 = VGGLinear().to(device)
+    args = parse_args()
+    MODELS = {"VGG":VGG, "VGGLinear":VGGLinear, "V1":V1}
+    model_type = MODELS[args.model]
+    if TESTING:
+        model1 = V1().to(device)
+    else:
+        model1 = model_type().to(device)
     print(model1.__class__)
 
     # Loss and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer1 = torch.optim.Adam(model1.parameters(), lr=learning_rate)
+
+    scheduler = StepLR(optimizer1, step_size=20, gamma=0.5)
 
     # Train the model
     total_step = len(train_loader)
@@ -96,6 +109,7 @@ def main(num_epochs = 200,
                 print('Test Accuracy of NN: {} % (improvement)'.format(100 * correct1 / total1))
 
             model1.train()
+            scheduler.step()
 
 if __name__=='__main__':
     main()
