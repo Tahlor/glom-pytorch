@@ -31,11 +31,12 @@ def advanced_loader():
 def loader(batch_size_train = 100,
            batch_size_test = 1000,
            shuffle = True,
+           split="letters",
            *args,
            **kwargs):
 
     train_loader = torch.utils.data.DataLoader(
-      torchvision.datasets.EMNIST(ROOT / 'data/emnist', split='letters', train=True, download=True,
+      torchvision.datasets.EMNIST(ROOT / 'data/emnist', split=split, train=True, download=True,
                                  transform=torchvision.transforms.Compose([
                                    torchvision.transforms.RandomPerspective(),
                                    torchvision.transforms.RandomRotation(10, fill=(0,)),
@@ -46,7 +47,7 @@ def loader(batch_size_train = 100,
       batch_size=batch_size_train, shuffle=shuffle)
 
     test_loader = torch.utils.data.DataLoader(
-      torchvision.datasets.EMNIST(ROOT / 'data/emnist', split='letters', train=False, download=True,
+      torchvision.datasets.EMNIST(ROOT / 'data/emnist', split=split, train=False, download=True,
                                  transform=torchvision.transforms.Compose([
                                    torchvision.transforms.ToTensor(),
                                    torchvision.transforms.Normalize(

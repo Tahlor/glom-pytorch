@@ -19,6 +19,7 @@ def parse_args():
     parser.add_argument('--config', type=str, default="./configs/stroke_config/baseline.yaml", help='Path to the config file.')
     parser.add_argument('--testing', action="store_true", default=False, help='Run testing version')
     parser.add_argument('--model', type=str, default="VGG", help='VGG, V1, VGGLinear')
+    parser.add_argument('--data', type=str, default="Letters", help='Letters, Balanced')
 
     #parser.add_argument('--name', type=str, default="", help='Optional - special name for this run')
     opts = parser.parse_args()
@@ -38,13 +39,13 @@ def main(num_epochs = 100,
          *args,
          **kwargs):
 
-    train_loader, test_loader = loaders.loader(batch_size_train = 100, batch_size_test = 1000)
+    args = parse_args()
+    train_loader, test_loader = loaders.loader(batch_size_train = 100, batch_size_test = 1000, split=args.data.lower())
 
     # Train the model
     total_step = len(train_loader)
     curr_lr1 = learning_rate
 
-    args = parse_args()
     MODELS = {"VGG":VGG, "VGGLinear":VGGLinear, "V1":V1}
     model_type = MODELS[args.model]
     if TESTING:
