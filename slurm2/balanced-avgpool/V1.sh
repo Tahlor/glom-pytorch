@@ -4,7 +4,7 @@
 #SBATCH --mem-per-cpu 5285MB
 #SBATCH --ntasks 7
 #SBATCH --nodes=1
-#SBATCH --output="VGGLinear.slurm"
+#SBATCH --output="/lustre/scratch/grp/fslg_internn/glom-pytorch/slurm/balanced-avgpool/V1.slurm"
 #SBATCH --time 4:00:00
 #SBATCH --mail-user=taylornarchibald@gmail.com   # email address
 #SBATCH --mail-type=BEGIN
@@ -23,5 +23,4 @@ conda activate /lustre/scratch/grp/fslg_internn/env/internn
 
 cd "/lustre/scratch/grp/fslg_internn/glom-pytorch"
 which python
-python -u /lustre/scratch/grp/fslg_internn/glom-pytorch/MNIST_vgg.py --model VGGLinear
-    
+python -u /lustre/scratch/grp/fslg_internn/glom-pytorch/MNIST_vgg.py --model V1 --data balanced --pool average
