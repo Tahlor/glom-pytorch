@@ -1,0 +1,33 @@
+Linear.slurm V1.slurm VGGLinear.slurm VGG.slurm
+./VGGLinear.slurm
+Test Accuracy of NN: 95.07692307692308 % Best: 95.46634615384615 %
+./VGG.slurm
+Test Accuracy of NN: 95.89423076923077 % Best: 95.89903846153847 %
+./balanced-no_dropout/VGGLinear.slurm
+Test Accuracy of NN: 90.41489361702128 % Best: 90.48936170212765 %
+./balanced-no_dropout/VGG.slurm
+Test Accuracy of NN: 90.63297872340425 % Best: 90.98936170212765 %
+./balanced-no_dropout/V1.slurm
+Test Accuracy of NN: 89.20744680851064 % Best: 90.1063829787234 %
+./balanced-no_dropout/Linear.slurm
+Test Accuracy of NN: 63.15425531914894 % Best: 64.68085106382979 %
+./balanced-avg_pool/VGGLinear.slurm
+Test Accuracy of NN: 62.57446808510638 % Best: 62.909574468085104 %
+./balanced-avg_pool/VGG.slurm
+Test Accuracy of NN: 90.4627659574468 % Best: 90.93085106382979 %
+./balanced-avg_pool/V1.slurm
+Test Accuracy of NN: 60.6968085106383 % Best: 62.97872340425532 %
+./balanced-avg_pool/Linear.slurm
+Test Accuracy of NN: 61.87234042553192 % Best: 64.0904255319149 %
+./balanced/VGGLinear.slurm
+Test Accuracy of NN: 88.70744680851064 % Best: 90.25 %
+./balanced/VGG.slurm
+Test Accuracy of NN: 90.69680851063829 % Best: 90.8563829787234 %
+./balanced/V1.slurm
+Test Accuracy of NN: 89.20744680851064 % Best: 90.05319148936171 %
+./balanced/Linear.slurm
+Test Accuracy of NN: 63.92553191489362 % Best: 63.97872340425532 %
+./V1.slurm
+Test Accuracy of NN: 95.28365384615384 % Best: 95.32211538461539 %
+./Linear.slurm
+Test Accuracy of NN: 66.23557692307692 % Best: 67.80288461538461 %
