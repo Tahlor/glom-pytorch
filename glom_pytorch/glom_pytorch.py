@@ -38,11 +38,16 @@ def default(val, d):
 # class
 
 class GroupedFeedForward(nn.Module):
+    """ This does a convolution on all layers simultaneously
+            So every level has a different learned initial state (nn.parameter);
+                # Each step, you prop everything up, so if 6 layers, it takes 6 steps before the input reaches the top layer
+                # After 12 steps, the bottom layer will have time to get feedback from the top layer, while it has been continuously receiving feeback from the bottom
+    """
     def __init__(self, *, dim, groups, mult = 4):
         super().__init__()
         total_dim = dim * groups # levels * dim
         self.net = nn.Sequential(
-            Rearrange('b n l d -> b (l d) n'),
+            Rearrange('batch n l d -> batch (l d) n'),
             nn.Conv1d(total_dim, total_dim * mult, 1, groups = groups),
             nn.GELU(),
             nn.Conv1d(total_dim * mult, total_dim, 1, groups = groups),
@@ -72,9 +77,12 @@ class ConsensusAttention(nn.Module):
 
     def forward(self, levels):
         _, n, _, d, device = *levels.shape, levels.device
+
+        # batch, num_patches, levels, 256dim
         q, k, v = levels, F.normalize(levels, dim = -1), levels
 
-        sim = einsum('b i l d, b j l d -> b l i j', q, k) * (d ** -0.5)
+        # multiply q by k and then sum over the dim256 axis
+        sim = einsum('b i levels dim256, b j levels dim256 -> b levels i j', q, k) * (d ** -0.5)
 
         if not self.attend_self:
             self_mask = torch.eye(n, device = device, dtype = torch.bool)
@@ -90,7 +98,6 @@ class ConsensusAttention(nn.Module):
         return out
 
 # main class
-
 class Glom(nn.Module):
     def __init__(
         self,
@@ -101,16 +108,31 @@ class Glom(nn.Module):
         patch_size = 14,
         consensus_self = False,
         local_consensus_radius = 0,
-        channels=1
+        channels=1,
+        unique_networks=True
     ):
+        """
+
+        Args:
+            dim:
+            levels:
+            image_size:
+            patch_size:
+            consensus_self:
+            local_consensus_radius:
+            channels:
+        """
         super().__init__()
+        #self.disable_topdown = disable_topdown
+
         # bottom level - incoming image, tokenize and add position
         num_patches_side = (image_size // patch_size)
         num_patches =  num_patches_side ** 2
         self.levels = levels
 
         self.image_to_tokens = nn.Sequential(
-            Rearrange('b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1 = patch_size, p2 = patch_size),
+            # Split h/w into patches
+            Rearrange('b c (num_patches_tall p1) (w p2) -> b (num_patches_tall w) (p1 p2 c)', p1 = patch_size, p2 = patch_size),
             nn.Linear(patch_size ** 2 * channels, dim)
         )
         self.pos_emb = nn.Embedding(num_patches, dim)
@@ -118,16 +140,28 @@ class Glom(nn.Module):
         # initial embeddings for all levels of a column
         self.init_levels = nn.Parameter(torch.randn(levels, dim))
 
+
         # bottom-up and top-down
         self.bottom_up = GroupedFeedForward(dim = dim, groups = levels)
         self.top_down = GroupedFeedForward(dim = dim, groups = levels - 1)
+
+        # # bottom-up and top-down
+        # self.bottom_up = []
+        # self.top_down = []
+        #
+        # number_of_networks = self.levels if unique_networks else 1
+        # for i in range(number_of_networks):
+        #     a = GroupedFeedForward(dim = dim, groups = levels)
+        #     b = GroupedFeedForward(dim = dim, groups = levels - 1)
+        #     self.bottom_up =
+        #     self.top_down =
 
         # consensus attention
         self.attention = ConsensusAttention(num_patches_side, attend_self = consensus_self, local_consensus_radius = local_consensus_radius)
 
     def forward(self, img, iters = None, levels = None, return_all = False):
         """
-        
+
         Args:
             img:
             iters:
@@ -157,12 +191,28 @@ class Glom(nn.Module):
         num_contributions = torch.empty(self.levels, device = device).fill_(4)
         num_contributions[-1] = 3  # top level does not get a top-down contribution, so have to account for this when doing the weighted mean
 
+        """ 6 layers = 12 iterations
+                # Minimum needed for information to flow from top layer all the way to bottom layer and back
+                # Layer flow is processed simultaneously
+                    # Does this make sense though? The lower levels 
+                    
+                # OK, it looks like all of the columns look directly at the image
+                    # ugh
+        """
         for _ in range(iters):
             levels_with_input = torch.cat((bottom_level, levels), dim = -2)  # each iteration, attach original input at the most bottom level, to be bottomed-up
+            # levels_with_input: batch, patches_num, levels, embd_dim
+            ## All have the same initial states; each layer has different, learned, initial value
+            # torch.allclose(levels_with_input[0,:,1:],levels_with_input[1,:,1:])
+
 
             bottom_up_out = self.bottom_up(levels_with_input[..., :-1, :])
 
+
             top_down_out = self.top_down(levels_with_input[..., 2:, :] + pos_embs) # positional embeddings given to top-down networks
+            x = torch.mean(bottom_up_out ** 2, [1, 2, 3]) ** .5
+            z = torch.mean(top_down_out ** 2, [1, 2, 3]) ** .5
+            #print(_, torch.max(x).item(),torch.max(z).item())
             top_down_out = F.pad(top_down_out, (0, 0, 0, 1), value = 0.)
 
             consensus = self.attention(levels)

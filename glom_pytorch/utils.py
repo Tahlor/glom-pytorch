@@ -9,14 +9,15 @@ class CNN(nn.Module):
             nn.Conv2d(in_channels, f1, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(f1),
             nn.ReLU(inplace=True),
-            nn.Conv2d(f1, f2, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(f1, f2, kernel_size=5, stride=1, padding=2),
             nn.BatchNorm2d(f2),
             nn.ReLU(inplace=True),
             #nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
     def forward(self, x):
-        return self.net(x)
+        out = self.net(x)
+        return out
 
 
 class GeometricMean(torch.nn.Module):
@@ -34,7 +35,9 @@ class Mean(torch.nn.Module):
         self.dim = dim
 
     def forward(self, x):
-        return torch.mean(x,self.dim)
+        std, mean = torch.std_mean(x, self.dim)
+        #print("STD", torch.mean(std))
+        return mean
 
 if __name__ == '__main__':
     C = CNN()
