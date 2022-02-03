@@ -82,8 +82,11 @@ class ConsensusAttention(nn.Module):
         q, k, v = levels, F.normalize(levels, dim = -1), levels
 
         # multiply q by k and then sum over the dim256 axis
-        sim = einsum('b i levels dim256, b j levels dim256 -> b levels i j', q, k) * (d ** -0.5)
+        # b i levels dim, b j levels dim -> b levels i j
+        # there are 4x4 patches; we take the dot product of each, and get a 4x4 gram matrix
+        sim = einsum('b i l        d, b j l d        -> b l i j', q, k) * (d ** -0.5)
 
+        # Don't self-attend; use your weight as a query, but the neighbors as the keys/values
         if not self.attend_self:
             self_mask = torch.eye(n, device = device, dtype = torch.bool)
             self_mask = rearrange(self_mask, 'i j -> () () i j')
@@ -109,7 +112,7 @@ class Glom(nn.Module):
         consensus_self = False,
         local_consensus_radius = 0,
         channels=1,
-        unique_networks=True
+        top_down_network=True,
     ):
         """
 
@@ -129,6 +132,7 @@ class Glom(nn.Module):
         num_patches_side = (image_size // patch_size)
         num_patches =  num_patches_side ** 2
         self.levels = levels
+        self.use_top_down = top_down_network
 
         self.image_to_tokens = nn.Sequential(
             # Split h/w into patches
@@ -143,7 +147,7 @@ class Glom(nn.Module):
 
         # bottom-up and top-down
         self.bottom_up = GroupedFeedForward(dim = dim, groups = levels)
-        self.top_down = GroupedFeedForward(dim = dim, groups = levels - 1)
+        self.top_down = GroupedFeedForward(dim = dim, groups = levels - 1) if self.use_top_down else torch.nn.Identity()
 
         # # bottom-up and top-down
         # self.bottom_up = []
@@ -190,6 +194,10 @@ class Glom(nn.Module):
 
         num_contributions = torch.empty(self.levels, device = device).fill_(4)
         num_contributions[-1] = 3  # top level does not get a top-down contribution, so have to account for this when doing the weighted mean
+        
+        if not self.use_top_down:
+            num_contributions -= 1
+            top_down_out = 0
 
         """ 6 layers = 12 iterations
                 # Minimum needed for information to flow from top layer all the way to bottom layer and back
@@ -208,16 +216,18 @@ class Glom(nn.Module):
 
             bottom_up_out = self.bottom_up(levels_with_input[..., :-1, :])
 
-
-            top_down_out = self.top_down(levels_with_input[..., 2:, :] + pos_embs) # positional embeddings given to top-down networks
-            x = torch.mean(bottom_up_out ** 2, [1, 2, 3]) ** .5
-            z = torch.mean(top_down_out ** 2, [1, 2, 3]) ** .5
-            #print(_, torch.max(x).item(),torch.max(z).item())
-            top_down_out = F.pad(top_down_out, (0, 0, 0, 1), value = 0.)
+            if self.use_top_down:
+                top_down_out = self.top_down(levels_with_input[..., 2:, :] + pos_embs) # positional embeddings given to top-down networks
+                # x = torch.mean(bottom_up_out ** 2, [1, 2, 3]) ** .5
+                # z = torch.mean(top_down_out ** 2, [1, 2, 3]) ** .5
+                # print(_, torch.max(x).item(),torch.max(z).item())
+                top_down_out = F.pad(top_down_out, (0, 0, 0, 1), value = 0.)
 
             consensus = self.attention(levels)
+            
 
             levels_sum = torch.stack((levels, bottom_up_out, top_down_out, consensus)).sum(dim = 0) # hinton said to use the weighted mean of (1) bottom up (2) top down (3) previous level value {t - 1} (4) consensus value
+                
             levels_mean = levels_sum / rearrange(num_contributions, 'l -> () () l ()')
 
             levels = levels_mean  # set for next iteration

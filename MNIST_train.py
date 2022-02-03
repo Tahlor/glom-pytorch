@@ -74,14 +74,15 @@ def parse_args():
     parser.add_argument('--levels', type=int, default=3, help='How many GLOM levels?')
     parser.add_argument('--iterations', type=int, default=2, help='How many iterations through hierarchy (multiplied by levels)')
     parser.add_argument('--top_down_network', type=bool, default=True, help='Activate top down network')
-    parser.add_argument('--neighborhood_size', type=int, default=True, help='Patch neighborhood')
+    parser.add_argument('--attention_radius', type=int, default=True, help='Patch neighborhood')
+    parser.add_argument('--advanced_classifier', type=bool, default=True, help='Advanced classifier')
 
     opts = parser.parse_args()
     return opts
 
 opts = parse_args()
 def parse_to_global():
-    global num_classes, GLOM_DIM, CHANNELS, IMG_DIM, P1, P2, LEVELS, USE_CNN, BATCH_SIZE, LEARNING_RATE
+    global num_classes, GLOM_DIM, CHANNELS, IMG_DIM, P1, P2, LEVELS, USE_CNN, BATCH_SIZE, LEARNING_RATE, RADIUS, TOP_DOWN, ITERATIONS, ADVANCED_CLASSIFIER
     num_classes = opts.num_classes
     GLOM_DIM = opts.glom_dim # 512
     CHANNELS = opts.channels # 3
@@ -91,6 +92,11 @@ def parse_to_global():
     USE_CNN = opts.use_cnn
     BATCH_SIZE = opts.batch_size
     LEARNING_RATE = opts.learning_rate
+
+    RADIUS = opts.attention_radius
+    TOP_DOWN = opts.top_down_network
+    ITERATIONS = opts.iterations
+    ADVANCED_CLASSIFIER = opts.advanced_classifier
 parse_to_global()
 
 device = 'cuda'
@@ -139,13 +145,15 @@ def main(num_epochs = 200,
         image_size=IMG_DIM,
         patch_size=P1,
         channels=CHANNELS,
+        local_consensus_radius=RADIUS,
+        top_down_network=TOP_DOWN,
     ).to(device)
     print(f"NUM PATCHES: {IMG_DIM/P1}")
 
     # model = model1
 
     # SOME KIND OF CONV THING HERE
-    if True:
+    if ADVANCED_CLASSIFIER:
         classifier = nn.Sequential(
             #Rearrange('b p dim -> b (p dim)'),
             #nn.ReLU(inplace=True),
@@ -198,7 +206,7 @@ def main(num_epochs = 200,
             loss1.backward()
             optimizer1.step()
             losses.accumulate(loss1.item(), weight=images.shape[0])
-            print(f"{i} {loss1.item():02f} {torch.max(top_layer_output):02f}")
+            print(f"{i} {loss1.item():.2f} {torch.max(top_layer_output):.2f}")
             if i == EPOCH_LENGTH:
                 losses.reset_accumulator()
                 print("Ordinary Epoch [{}/{}], Step [{}/{}] Loss: {:.4f} {}"

@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
   name = 'glom-pytorch',
   packages = find_packages(),
-  version = '0.0.31',
+  version = '0.0.32',
   license='MIT',
   description = 'Glom - Pytorch',
   author = 'Phil Wang',
