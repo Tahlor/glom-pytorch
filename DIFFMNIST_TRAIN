@@ -1,0 +1,81 @@
+41,49d40
+< num_classes = 27
+< GLOM_DIM = 256 # 512
+< CHANNELS = 1 # 3
+< IMG_DIM = 28 # 224
+< P1 = P2 = 14 # 14
+< LEVELS = 3
+< USE_CNN = False
+< BATCH_SIZE = 400
+< LEARNING_RATE = 0.005 #* BATCH_SIZE / 200
+60,62c51,59
+< 
+< ### DOES NOT WORK WITH CNN AT THE BOTTOM???
+< ### IT BLOWS UP AT 4 LEVELS
+---
+> ### TO DO:
+> # Save the network
+> # Load from saved network
+> # backprop from each step after it has propagated up; pose machine style;
+> 
+> ### ABLATIONS
+> # No feedback network
+> # What is going on inside?
+> # Just the forward prop network with no pooled attention (does the pooled-attention help?)
+68a66,79
+> 
+>     parser.add_argument('--num_classes', type=int, default=27,  help='Number of classes')
+>     parser.add_argument('--glom_dim',    type=int, default=256, help='GLOM dimension')
+>     parser.add_argument('--channels',    type=int, default=1,   help='Channels')
+>     parser.add_argument('--patch_dim',   type=int, default=14,  help='Pixel width of patch')
+>     parser.add_argument('--use_cnn', action="store_true", default=False, help='Add CNN to first layer')
+>     parser.add_argument('--learning_rate', type=float, default=0.005, help='Learning rate')
+>     parser.add_argument('--batch_size', type=int, default=400, help='Learning rate')
+>     parser.add_argument('--levels', type=int, default=3, help='How many GLOM levels?')
+>     parser.add_argument('--iterations', type=int, default=2, help='How many iterations through hierarchy (multiplied by levels)')
+>     parser.add_argument('--top_down_network', type=bool, default=True, help='Activate top down network')
+>     parser.add_argument('--attention_radius', type=int, default=True, help='Patch neighborhood')
+>     parser.add_argument('--advanced_classifier', type=bool, default=True, help='Advanced classifier')
+> 
+71a83,101
+> opts = parse_args()
+> def parse_to_global():
+>     global num_classes, GLOM_DIM, CHANNELS, IMG_DIM, P1, P2, LEVELS, USE_CNN, BATCH_SIZE, LEARNING_RATE, RADIUS, TOP_DOWN, ITERATIONS, ADVANCED_CLASSIFIER
+>     num_classes = opts.num_classes
+>     GLOM_DIM = opts.glom_dim # 512
+>     CHANNELS = opts.channels # 3
+>     IMG_DIM = 28 # 224
+>     P1 = P2 = opts.patch_dim # 14
+>     LEVELS = opts.levels
+>     USE_CNN = opts.use_cnn
+>     BATCH_SIZE = opts.batch_size
+>     LEARNING_RATE = opts.learning_rate
+> 
+>     RADIUS = opts.attention_radius
+>     TOP_DOWN = opts.top_down_network
+>     ITERATIONS = opts.iterations
+>     ADVANCED_CLASSIFIER = opts.advanced_classifier
+> parse_to_global()
+> 
+117a148,149
+>         local_consensus_radius=RADIUS,
+>         top_down_network=TOP_DOWN,
+124c156
+<     if False:
+---
+>     if ADVANCED_CLASSIFIER:
+147c179
+<     all_params = itertools.chain(model.parameters(), classifier.parameters())
+---
+>     all_params = list(itertools.chain(model.parameters(), classifier.parameters()))
+150a183,188
+>     # Print parameters - NOT WORKING
+>     parameters = sum(p.numel() for p in all_params if p.requires_grad)
+>     print(model.__class__)
+>     print("Parameters", parameters)
+> 
+> 
+177c215
+<             print(f"{i} {loss1.item():02f} {torch.max(top_layer_output):02f}")
+---
+>             print(f"{i} {loss1.item():.2f} {torch.max(top_layer_output):.2f}")

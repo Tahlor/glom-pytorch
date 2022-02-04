@@ -86,13 +86,12 @@ def parse_to_global():
     num_classes = opts.num_classes
     GLOM_DIM = opts.glom_dim # 512
     CHANNELS = opts.channels # 3
-    IMG_DIM = 28 # 224
+    # IMG_DIM = 28 # 224
     P1 = P2 = opts.patch_dim # 14
     LEVELS = opts.levels
     USE_CNN = opts.use_cnn
     BATCH_SIZE = opts.batch_size
     LEARNING_RATE = opts.learning_rate
-
     RADIUS = opts.attention_radius
     TOP_DOWN = opts.top_down_network
     ITERATIONS = opts.iterations
@@ -125,8 +124,13 @@ def main(num_epochs = 200,
          log_interval = 500,
          *args,
          **kwargs):
-
+    global NUM_PATCHES, IMG_DIM
     train_loader, test_loader = loaders.loader(batch_size_train = BATCH_SIZE, batch_size_test = BATCH_SIZE*10)
+
+    sample, gt = next(iter(test_loader))
+    IMG_DIM = sample.shape[2]
+    NUM_PATCHES = IMG_DIM / opts.patch_dim
+
 
     # Train the model
     total_step = len(train_loader)
@@ -160,12 +164,23 @@ def main(num_epochs = 200,
             Mean(dim=1),
             nn.Dropout(p=0.5),
             nn.Linear(GLOM_DIM, 512),
-            nn.BatchNorm1d(512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(p=0.5),
-            nn.Linear(512, num_classes),
+            # nn.BatchNorm1d(512),
+            # nn.ReLU(inplace=True),
+            # nn.Dropout(p=0.5),
+            # nn.Linear(512, num_classes),
             # Rearrange('(b p) dim -> b p dim')
         ).to(device)
+
+        classifier = nn.Sequential(
+            Rearrange('b p dim -> b (p dim)'),
+            nn.Linear(GLOM_DIM * NUM_PATCHES, num_classes),
+        ).to(device)
+
+        # classifier = nn.Sequential(
+        #     Rearrange('b p dim -> (b p) dim'),
+        #     nn.Linear(GLOM_DIM * NUM_PATCHES, num_classes),
+        # ).to(device)
+
     else:
         classifier = nn.Sequential(
             Mean(dim=1),
