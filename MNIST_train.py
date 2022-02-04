@@ -176,9 +176,15 @@ def main(num_epochs = 200,
 
     # Loss and optimizer
     criterion = nn.CrossEntropyLoss()
-    all_params = itertools.chain(model.parameters(), classifier.parameters())
+    all_params = list(itertools.chain(model.parameters(), classifier.parameters()))
     optimizer1 = torch.optim.Adam(all_params, lr=learning_rate)
     scheduler = StepLR(optimizer1, step_size=10, gamma=0.8)
+
+    # Print parameters - NOT WORKING
+    parameters = sum(p.numel() for p in all_params if p.requires_grad)
+    print(model.__class__)
+    print("Parameters", parameters)
+
 
     # Train the model
     total_step = len(train_loader)
