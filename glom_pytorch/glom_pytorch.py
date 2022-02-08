@@ -113,6 +113,7 @@ class Glom(nn.Module):
         local_consensus_radius = 0,
         channels=1,
         top_down_network=True,
+        default_iters=None
     ):
         """
 
@@ -124,6 +125,7 @@ class Glom(nn.Module):
             consensus_self:
             local_consensus_radius:
             channels:
+            iters
         """
         super().__init__()
         #self.disable_topdown = disable_topdown
@@ -132,6 +134,7 @@ class Glom(nn.Module):
         num_patches_side = (image_size // patch_size)
         num_patches =  num_patches_side ** 2
         self.levels = levels
+        self.iters = self.levels * 2 if default_iters is None else default_iters
         self.use_top_down = top_down_network
 
         self.image_to_tokens = nn.Sequential(
@@ -176,7 +179,7 @@ class Glom(nn.Module):
 
         """
         b, device = img.shape[0], img.device
-        iters = default(iters, self.levels * 2)   # need to have twice the number of levels of iterations in order for information to propagate up and back down. can be overridden
+        iters = default(iters, self.iters)   # need to have twice the number of levels of iterations in order for information to propagate up and back down. can be overridden
 
         tokens = self.image_to_tokens(img)
         n = tokens.shape[1]
@@ -222,9 +225,10 @@ class Glom(nn.Module):
                 # z = torch.mean(top_down_out ** 2, [1, 2, 3]) ** .5
                 # print(_, torch.max(x).item(),torch.max(z).item())
                 top_down_out = F.pad(top_down_out, (0, 0, 0, 1), value = 0.)
+            else:
+                top_down_out = torch.zeros_like(bottom_up_out)
 
             consensus = self.attention(levels)
-            
 
             levels_sum = torch.stack((levels, bottom_up_out, top_down_out, consensus)).sum(dim = 0) # hinton said to use the weighted mean of (1) bottom up (2) top down (3) previous level value {t - 1} (4) consensus value
                 
