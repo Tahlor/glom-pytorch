@@ -8,7 +8,7 @@ time = "72:00:00"
 gpu = "pascal"
 EMAIL = "taylornarchibald@gmail.com"
 env = "/lustre/scratch/grp/fslg_internn/env/internn"
-cd_path = "/lustre/scratch/grp/fslg_internn/glom-pytorch"
+ROOT_PROJECT = "/lustre/scratch/grp/fslg_internn/glom-pytorch"
 
 
 def cartesian_product(inp):
@@ -38,7 +38,7 @@ def write_out(command,
 #SBATCH --mem-per-cpu {mem}
 #SBATCH --ntasks {threads}
 #SBATCH --nodes=1
-#SBATCH --output="{result_path}/log.slurm"
+#SBATCH --output="{ROOT_PROJECT}/{result_path}/log.slurm"
 #SBATCH --time {time}
 #SBATCH --mail-user={EMAIL}   # email address
 #SBATCH --mail-type=BEGIN
@@ -55,7 +55,7 @@ export PATH="{env}:$PATH"
 eval "$(conda shell.bash hook)"
 conda activate {env}
 
-cd "{cd_path}"
+cd "{ROOT_PROJECT}"
 which python
 {command}
 """)
