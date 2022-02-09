@@ -1,5 +1,7 @@
 TESTING = False
 VERBOSE = TESTING
+EPOCH_LENGTH = 200 if not TESTING else 10
+
 import utils
 import argparse
 import itertools
@@ -91,7 +93,7 @@ def parse_args():
 
 opts = parse_args()
 def parse_to_global():
-    global num_classes, GLOM_DIM, CHANNELS, IMG_DIM, P1, P2, LEVELS, USE_CNN, BATCH_SIZE, LEARNING_RATE, RADIUS, TOP_DOWN, ITERATIONS, ADVANCED_CLASSIFIER, SAVE_PATH
+    global num_classes, GLOM_DIM, CHANNELS, IMG_DIM, P1, P2, LEVELS, USE_CNN, BATCH_SIZE, LEARNING_RATE, RADIUS, TOP_DOWN, ITERATIONS, ADVANCED_CLASSIFIER, SAVE_PATH, EPOCHS
     num_classes = opts.num_classes
     GLOM_DIM = opts.glom_dim # 512
     CHANNELS = opts.channels # 3
@@ -106,6 +108,7 @@ def parse_to_global():
     ITERATIONS = opts.iterations * LEVELS
     ADVANCED_CLASSIFIER = opts.advanced_classifier
     SAVE_PATH = opts.save_path
+    EPOCHS = 50
     if Path(SAVE_PATH).suffix:
         Path(SAVE_PATH).parent.mkdir(parents=True, exist_ok=True)
     else:
@@ -141,7 +144,7 @@ def mytimer(func):
         return result
     return wrapper
 
-def main(num_epochs = 200,
+def main(num_epochs = EPOCHS,
          learning_rate = LEARNING_RATE,
          momentum = 0.5,
          log_interval = 500,
@@ -229,7 +232,6 @@ def main(num_epochs = 200,
     total_step = len(train_loader)
     best_accuracy1 = 0
 
-    EPOCH_LENGTH = 100 if not TESTING else 10
     COUNTER = stats.Counter(instances_per_epoch=EPOCH_LENGTH)
     losses = stats.AutoStat(COUNTER, name="Loss1", x_plot="epoch_decimal")
 

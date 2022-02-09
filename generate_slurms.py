@@ -62,7 +62,9 @@ which python
 
 # all_combinations = list(cartesian_product(variation_dict))
 
-all_combinations = [ {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': True, 'glom_dim': 128},
+all_combinations = [
+    {'attention_radius': 0, 'iterations': 1, 'levels': 2, 'use_cnn': True, 'glom_dim': 128},
+    {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': True, 'glom_dim': 128},
     {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': True, 'glom_dim': 256},
     {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': False, 'glom_dim': 128},
     {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': False, 'glom_dim': 256},
