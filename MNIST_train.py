@@ -106,8 +106,10 @@ def parse_to_global():
     ITERATIONS = opts.iterations * LEVELS
     ADVANCED_CLASSIFIER = opts.advanced_classifier
     SAVE_PATH = opts.save_path
-
-    Path(SAVE_PATH).mkdir(parents=True, exist_ok=True)
+    if Path(SAVE_PATH).suffix:
+        Path(SAVE_PATH).parent.mkdir(parents=True, exist_ok=True)
+    else:
+        Path(SAVE_PATH).mkdir(parents=True, exist_ok=True)
 parse_to_global()
 
 device = 'cuda'
