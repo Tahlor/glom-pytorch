@@ -1,22 +1,22 @@
 TESTING = False
 
-from timeit import default_timer as timer
-import itertools
-import torch
-import torchvision
-import math
-import torch.nn.functional as F
-import numpy as np
+import utils
 import argparse
-from data import loaders
+import itertools
+from timeit import default_timer as timer
+
 import torch
-from glom_pytorch.glom_pytorch import Glom
-from glom_pytorch.utils import GeometricMean, Mean, CNN
-from glom_pytorch import stats
 import torch.nn.functional as F
-from torch import nn
 from einops.layers.torch import Rearrange
-from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
+from torch import nn
+from torch.optim.lr_scheduler import StepLR
+
+from data import loaders
+from glom_pytorch import stats
+from glom_pytorch.glom_pytorch import Glom
+from glom_pytorch.utils import Mean, CNN
+
+from pathlib import Path
 
 ## Sine embeddings
 ## Top level NN to create letter
@@ -83,13 +83,14 @@ def parse_args():
     parser.add_argument('--top_down_network', type=bool, default=True, help='Activate top down network') # working
     parser.add_argument('--attention_radius', type=int, default=True, help='Patch neighborhood')
     parser.add_argument('--advanced_classifier', type=bool, default=True, help='Advanced classifier')
+    parser.add_argument('--save_path', type=str, default="./results", help='Results path')
 
     opts = parser.parse_args()
     return opts
 
 opts = parse_args()
 def parse_to_global():
-    global num_classes, GLOM_DIM, CHANNELS, IMG_DIM, P1, P2, LEVELS, USE_CNN, BATCH_SIZE, LEARNING_RATE, RADIUS, TOP_DOWN, ITERATIONS, ADVANCED_CLASSIFIER
+    global num_classes, GLOM_DIM, CHANNELS, IMG_DIM, P1, P2, LEVELS, USE_CNN, BATCH_SIZE, LEARNING_RATE, RADIUS, TOP_DOWN, ITERATIONS, ADVANCED_CLASSIFIER, SAVE_PATH
     num_classes = opts.num_classes
     GLOM_DIM = opts.glom_dim # 512
     CHANNELS = opts.channels # 3
@@ -103,6 +104,9 @@ def parse_to_global():
     TOP_DOWN = opts.top_down_network
     ITERATIONS = opts.iterations * LEVELS
     ADVANCED_CLASSIFIER = opts.advanced_classifier
+    SAVE_PATH = opts.save_path
+
+    Path(SAVE_PATH).mkdir(parents=True, exist_ok=True)
 parse_to_global()
 
 device = 'cuda'
@@ -159,7 +163,7 @@ def main(num_epochs = 200,
         my_cnn = CNN(f1=CHANNELS, f2=CHANNELS).to(device)
 
 
-    model1 = Glom(
+    glom_model = Glom(
         dim=GLOM_DIM,
         levels=LEVELS,
         image_size=IMG_DIM,
@@ -203,13 +207,13 @@ def main(num_epochs = 200,
             nn.Linear(GLOM_DIM, num_classes),
         ).to(device)
 
-    model = nn.Sequential(my_cnn, model1)
+    model = nn.Sequential(my_cnn, glom_model)
 
     # Loss and optimizer
     criterion = nn.CrossEntropyLoss()
     all_params = list(itertools.chain(model.parameters(), classifier.parameters()))
-    optimizer1 = torch.optim.Adam(all_params, lr=learning_rate)
-    scheduler = StepLR(optimizer1, step_size=10, gamma=0.8)
+    optimizer = torch.optim.Adam(all_params, lr=learning_rate)
+    scheduler = StepLR(optimizer, step_size=10, gamma=0.8)
     # rearrange = Rearrange('b num_patches alphabet -> (b num_patches) alphabet')
 
     # Print parameters - NOT WORKING
@@ -222,7 +226,7 @@ def main(num_epochs = 200,
     total_step = len(train_loader)
     best_accuracy1 = 0
 
-    EPOCH_LENGTH = 100 if not TESTING else 1
+    EPOCH_LENGTH = 100 if not TESTING else 10
     COUNTER = stats.Counter(instances_per_epoch=EPOCH_LENGTH)
     losses = stats.AutoStat(COUNTER, name="Loss1", x_plot="epoch_decimal")
 
@@ -253,9 +257,9 @@ def main(num_epochs = 200,
             loss1 = criterion(pred, targ)
 
             # Backward and optimize
-            optimizer1.zero_grad()
+            optimizer.zero_grad()
             loss1.backward()
-            optimizer1.step()
+            optimizer.step()
             losses.accumulate(loss1.item(), weight=images.shape[0])
             print(f"{i} {loss1.item():.2f} {torch.max(top_layer_output):.2f}")
             if i == EPOCH_LENGTH:
@@ -277,20 +281,23 @@ def main(num_epochs = 200,
 
                 pred, targ, top_layer_output = run_model(images, labels)
                 _, predicted = torch.max(pred, 1)
-                total1 += labels.size(0)
+                total1 += targ.numel()
                 correct1 += (predicted == targ).sum().item()
 
             if best_accuracy1 >= correct1 / total1:
-                curr_lr1 = learning_rate * np.asscalar(pow(np.random.rand(1), 3))
-                update_lr(optimizer1, curr_lr1)
+                #curr_lr1 = learning_rate * np.asscalar(pow(np.random.rand(1), 3))
+                curr_lr1 = learning_rate * .8
+                update_lr(optimizer, curr_lr1)
                 print('Test Accuracy of NN: {} % Best: {} %'.format(100 * correct1 / total1, 100 * best_accuracy1))
             else:
                 best_accuracy1 = correct1 / total1
                 net_opt1 = model
                 print('Test Accuracy of NN: {} % (improvement)'.format(100 * correct1 / total1))
 
+            _loss = losses.get_loss_dict()
+            utils.save_model(SAVE_PATH, model, optimizer, epoch=epoch + 1, loss=_loss, scheduler=scheduler)
             model.train()
-            scheduler.step()
+            # scheduler.step()
 
 
 def get_params(model):

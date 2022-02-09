@@ -127,6 +127,9 @@ class AutoStat(Stat):
         self.current_sum = 0
         self.weight = 0
 
+    def get_loss_dict(self):
+        return zip(self.x, self.y)
+
     def _get_weight(self):
         new_step = self.x_counter.__dict__[self.x_weight]
         weight = (new_step - self.last_weight_step)
