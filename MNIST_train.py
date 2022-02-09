@@ -1,5 +1,5 @@
 TESTING = False
-
+VERBOSE = TESTING
 import utils
 import argparse
 import itertools
@@ -262,7 +262,8 @@ def main(num_epochs = 200,
             loss1.backward()
             optimizer.step()
             losses.accumulate(loss1.item(), weight=images.shape[0])
-            print(f"{i} {loss1.item():.2f} {torch.max(top_layer_output):.2f}")
+            if VERBOSE:
+                print(f"{i} {loss1.item():.2f} {torch.max(top_layer_output):.2f}")
             if i == EPOCH_LENGTH:
                 losses.reset_accumulator()
                 print("Ordinary Epoch [{}/{}], Step [{}/{}] Loss: {:.4f} {}"
