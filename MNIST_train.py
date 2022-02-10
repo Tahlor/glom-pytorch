@@ -246,7 +246,7 @@ def main(num_epochs = EPOCHS,
 
         if True:
             pred = letter_logits.permute(0, 2, 1)
-            targ = torch.Tensor.repeat(labels.unsqueeze(1), [1, 4])
+            targ = torch.Tensor.repeat(labels.unsqueeze(1), [1, NUM_PATCHES])
         else:
             pred = torch.mean(letter_logits, axis=1)
             targ = labels

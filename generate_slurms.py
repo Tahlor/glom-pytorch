@@ -62,29 +62,33 @@ which python
 
 # all_combinations = list(cartesian_product(variation_dict))
 
+patch_dim = 7
 all_combinations = [
-    {'attention_radius': 0, 'iterations': 1, 'levels': 2, 'use_cnn': True, 'glom_dim': 128},
-    {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': True, 'glom_dim': 128},
-    {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': True, 'glom_dim': 256},
-    {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': False, 'glom_dim': 128},
-    {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': False, 'glom_dim': 256},
-    {'attention_radius': 0, 'iterations': 2, 'levels': 3, 'use_cnn': True, 'glom_dim': 128},
-    {'attention_radius': 1, 'iterations': 2, 'levels': 2, 'use_cnn': False, 'glom_dim': 128},
-    {'attention_radius': 1, 'iterations': 2, 'levels': 2, 'use_cnn': False, 'glom_dim': 256},
-    {'attention_radius': 1, 'iterations': 2, 'levels': 3, 'use_cnn': False, 'glom_dim': 128},
-    {'attention_radius': 1, 'iterations': 2, 'levels': 3, 'use_cnn': False, 'glom_dim': 256},
-    {'attention_radius': 1, 'iterations': 3, 'levels': 2, 'use_cnn': False, 'glom_dim': 128},
-    {'attention_radius': 1, 'iterations': 3, 'levels': 3, 'use_cnn': False, 'glom_dim': 256}
+    {'attention_radius': 0, 'iterations': 1, 'levels': 2, 'use_cnn': True, 'glom_dim': 128, "patch_dim": patch_dim},
+    {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': True, 'glom_dim': 128, "patch_dim": patch_dim},
+    {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': True, 'glom_dim': 256, "patch_dim": patch_dim},
+    {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': False, 'glom_dim': 128, "patch_dim": patch_dim},
+    {'attention_radius': 0, 'iterations': 2, 'levels': 2, 'use_cnn': False, 'glom_dim': 256, "patch_dim": patch_dim},
+    {'attention_radius': 0, 'iterations': 2, 'levels': 3, 'use_cnn': True, 'glom_dim': 128, "patch_dim": patch_dim},
+    {'attention_radius': 1, 'iterations': 2, 'levels': 2, 'use_cnn': False, 'glom_dim': 128, "patch_dim": patch_dim},
+    {'attention_radius': 1, 'iterations': 2, 'levels': 2, 'use_cnn': False, 'glom_dim': 256, "patch_dim": patch_dim},
+    {'attention_radius': 1, 'iterations': 2, 'levels': 3, 'use_cnn': False, 'glom_dim': 128, "patch_dim": patch_dim},
+    {'attention_radius': 1, 'iterations': 2, 'levels': 3, 'use_cnn': False, 'glom_dim': 256, "patch_dim": patch_dim},
+    {'attention_radius': 1, 'iterations': 3, 'levels': 2, 'use_cnn': False, 'glom_dim': 128, "patch_dim": patch_dim},
+    {'attention_radius': 1, 'iterations': 3, 'levels': 3, 'use_cnn': False, 'glom_dim': 256, "patch_dim": patch_dim}
 ]
 
 for variant in all_combinations:
     base = "python MNIST_train.py "
     path = f"./results/"
     name = ""
+    keys = ""
     for k,v in variant.items():
         base += f" --{k} {v}"
         name += f"{v}"
+        keys += f"{k}"
     base += f" --save_path {path}{name}/model.pt"
     print(base)
     result_path = f"{path}{name}"
     write_out(base, name, result_path)
+print(k)
