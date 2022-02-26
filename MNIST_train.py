@@ -70,21 +70,27 @@ from pathlib import Path
 # Does more iters help (even if trained on few)?
 
 
+## TRY bigger radius, smaller patches
+# try smaller glom dim
+# try different classifiers at the end
+# turn off top-bottom network
+# get transformer in there
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--testing', action="store_true", default=False, help='Run testing version')
     parser.add_argument('--num_classes', type=int, default=27,  help='Number of classes')
-    parser.add_argument('--glom_dim',    type=int, default=256, help='GLOM dimension')
+    parser.add_argument('--glom_dim',    type=int, default=64, help='GLOM dimension')
     parser.add_argument('--channels',    type=int, default=1,   help='Channels')
     parser.add_argument('--patch_dim',   type=int, default=14,  help='Pixel width of patch')
     #parser.add_argument('--use_cnn', action="store_true", default=False, help='Add CNN to first layer')
-    parser.add_argument('--use_cnn', type=bool, default=False, help='Add CNN')
+    parser.add_argument('--use_cnn', type=bool, default=True, help='Add CNN')
     parser.add_argument('--learning_rate', type=float, default=0.005, help='Learning rate')
     parser.add_argument('--batch_size', type=int, default=400, help='Learning rate')
-    parser.add_argument('--levels', type=int, default=3, help='How many GLOM levels?')
-    parser.add_argument('--iterations', type=int, default=2, help='How many iterations through hierarchy (multiplied by levels)')
+    parser.add_argument('--levels', type=int, default=2, help='How many GLOM levels?')
+    parser.add_argument('--iterations', type=int, default=4, help='How many iterations through hierarchy (multiplied by levels)')
     parser.add_argument('--top_down_network', type=bool, default=True, help='Activate top down network') # working
-    parser.add_argument('--attention_radius', type=int, default=True, help='Patch neighborhood')
+    parser.add_argument('--attention_radius', type=int, default=1, help='Patch neighborhood')
     parser.add_argument('--advanced_classifier', type=bool, default=True, help='Advanced classifier')
     parser.add_argument('--save_path', type=str, default="./results", help='Results path')
 
@@ -179,7 +185,7 @@ def main(num_epochs = EPOCHS,
         top_down_network=TOP_DOWN,
         default_iters=ITERATIONS,
     ).to(device)
-    print(f"NUM PATCHES: {IMG_DIM/P1}")
+    print(f"NUM PATCHES: {NUM_PATCHES}")
 
     # model = model1
 
@@ -230,7 +236,7 @@ def main(num_epochs = EPOCHS,
 
     # Train the model
     total_step = len(train_loader)
-    best_accuracy1 = 0
+    best_accuracy_test = 0; best_accuracy_train = 0
 
     COUNTER = stats.Counter(instances_per_epoch=EPOCH_LENGTH)
     losses = stats.AutoStat(COUNTER, name="Loss1", x_plot="epoch_decimal")
@@ -254,6 +260,8 @@ def main(num_epochs = EPOCHS,
         return pred, targ, top_layer_output
 
     for epoch in range(num_epochs):
+        ## TRAIN
+        correct1 = 0; total1 = 0
         for i, (images, labels) in enumerate(train_loader):
             images = images.to(device)
             labels = labels.to(device)
@@ -266,20 +274,28 @@ def main(num_epochs = EPOCHS,
             loss1.backward()
             optimizer.step()
             losses.accumulate(loss1.item(), weight=images.shape[0])
+
+            _, predicted = torch.max(pred, 1)
+            total1 += targ.numel()
+            correct1 += (predicted == targ).sum().item()
+
             if VERBOSE:
                 print(f"{i} {loss1.item():.2f} {torch.max(top_layer_output):.2f}")
             if i == EPOCH_LENGTH:
                 losses.reset_accumulator()
                 print("Ordinary Epoch [{}/{}], Step [{}/{}] Loss: {:.4f} {}"
                       .format(epoch + 1, num_epochs, i + 1, total_step, loss1.item(), str(losses)))
+
+                current_accuracy = correct1 / total1
+                best_accuracy_test = max(best_accuracy_train, current_accuracy)
+                print('Train Accuracy of NN: {} % Best: {} %'.format(100 * current_accuracy, 100 * best_accuracy_train))
                 break
 
         # Test the model
         model.eval()
 
         with torch.no_grad():
-            correct1 = 0
-            total1 = 0
+            correct1 = 0; total1 = 0
 
             for images, labels in test_loader:
                 images = images.to(device)
@@ -290,13 +306,13 @@ def main(num_epochs = EPOCHS,
                 total1 += targ.numel()
                 correct1 += (predicted == targ).sum().item()
 
-            if best_accuracy1 >= correct1 / total1:
+            if best_accuracy_test >= correct1 / total1:
                 #curr_lr1 = learning_rate * np.asscalar(pow(np.random.rand(1), 3))
                 curr_lr1 = learning_rate * .8
                 update_lr(optimizer, curr_lr1)
-                print('Test Accuracy of NN: {} % Best: {} %'.format(100 * correct1 / total1, 100 * best_accuracy1))
+                print('Test Accuracy of NN: {} % Best: {} %'.format(100 * correct1 / total1, 100 * best_accuracy_test))
             else:
-                best_accuracy1 = correct1 / total1
+                best_accuracy_test = correct1 / total1
                 net_opt1 = model
                 print('Test Accuracy of NN: {} % (improvement)'.format(100 * correct1 / total1))
 
