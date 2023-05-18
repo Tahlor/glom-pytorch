@@ -2,6 +2,13 @@
 
 <img src="./glom1.png" width="600px"></img>
 
+## Status
+
+I abandoned this a while ago as I couldn't get it to be as competitive as I had hoped. You can see the repo I forked it from, it might be helpful or one of the other forks.
+I was trying to use GLOM in handwriting recognition, where the hierarchy would be something like LETTERS -> WORDS -> LINE. I used MNIST letters to form words, so I could have precise segmentation boundaries and train the bottom level of the hierarchy on these letters directly, and the middle level would be trained on words directly etc. The hope was this might bootstrap model training and could be finetuned on lines directly afterward.
+
+Unfortunately, this repo is "AS IS" and I don't presently have the capacity to update anything.
+
 ## GLOM - Pytorch
 
 An implementation of <a href="https://arxiv.org/abs/2102.12627">Glom</a>, Geoffrey Hinton's new idea that integrates concepts from neural fields, top-down-bottom-up processing, and attention (consensus between columns) for learning emergent part-whole heirarchies from data.
